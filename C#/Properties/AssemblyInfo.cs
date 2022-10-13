@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // 控制。更改这些特性值可修改
 // 与程序集关联的信息。
 [assembly: AssemblyTitle("小爱UDP关机")]
-[assembly: AssemblyDescription("使小爱可以通过 UDP 广播操作电脑关机。\r\n\r\n项目地址：https://github.com/tty228/udp_turn_off")]
+[assembly: AssemblyDescription("使小爱可以通过 UDP 广播操作电脑关机。\r\n\r\n原项目地址：https://github.com/tty228/udp_turn_off \n，魔改：bszydxh\n，github:https://github.com/bszydxh")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("tty228")]
 [assembly: AssemblyProduct("小爱UDP关机")]

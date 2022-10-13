@@ -28,18 +28,18 @@ namespace udp_turn_off
         {
             Icon = Properties.Resources._001;
             notifyIcon1.Icon = Properties.Resources._001;
-            this.BeginInvoke(new Action(() => {this.Hide();this.Opacity = 1;}));//隐藏窗口并透明化
-
+            this.BeginInvoke(new Action(() => { this.Hide(); this.Opacity = 1; }));//隐藏窗口并透明化
             //初始化设置
             if (Regedit.Read("Software\\tty228\\udp_turn_off", "countdown") == "" || Regedit.Read("Software\\tty228\\udp_turn_off", "port") == "" || Regedit.Read("Software\\tty228\\udp_turn_off", "msg") == "" || Regedit.Read("Software\\tty228\\udp_turn_off", "Shutdown_Options") == "")
             {
-                Button1_Click(null,null);
+                Button1_Click(null, null);
             }
             else
             {
                 textBox1.Text = Regedit.Read("Software\\tty228\\udp_turn_off", "countdown");
                 textBox2.Text = Regedit.Read("Software\\tty228\\udp_turn_off", "port");
                 textBox3.Text = Regedit.Read("Software\\tty228\\udp_turn_off", "msg");
+                流光溢彩ToolStripMenuItem.Checked = false;
                 switch (Regedit.Read("Software\\tty228\\udp_turn_off", "Shutdown_Options"))
                 {
                     case "shutdown":
@@ -73,10 +73,10 @@ namespace udp_turn_off
             recvThread.IsBackground = true;
             recvThread.Start();
             SystemEvents.PowerModeChanged += OnPowerChange; //监听电源改变事件
-            SendMsg("the_computer_is_on");
+            SendNeedMsg("start_turn_on");
         }
 
-            public Form1()
+        public Form1()
         {
             CheckForIllegalCrossThreadCalls = false;
             InitializeComponent();
@@ -124,10 +124,12 @@ namespace udp_turn_off
         /// </summary>
         private void RecvMsg()
         {
+            //Debug.WriteLine("recv start!");
+            SystemEvents.SessionSwitch += OnSessionSwitch;
             if (PortInUse(int.Parse(textBox2.Text)) == true)
             {
                 MessageBox.Show("通常每个套接字地址(协议/网络地址/端口)只允许使用一次。\n\n请重新设置。", "端口被占用");
-                NotifyIcon1_MouseDoubleClick(null,null);
+                NotifyIcon1_MouseDoubleClick(null, null);
             }
             else
             {
@@ -145,7 +147,42 @@ namespace udp_turn_off
                     {
                         SendMsg("the_computer_is_on");
                     }
+                    else if (msg == "color")
+                    {
+                        流光溢彩ToolStripMenuItem.Checked = true;
+                        System.Diagnostics.Process.Start("C:/Program Files/Prismatik/Prismatik.exe");
+                    }
+                    else if (msg == "genshin")
+                    {
+                        try
+                        {
+                            System.Diagnostics.Process.Start("C:/Program Files/Prismatik/Prismatik.exe");
+                            System.Diagnostics.Process.Start("C:/Users/bszydxh/游戏/genshin.bat");
+                        }
+                        catch (Exception)
+                        {
 
+                        }
+                    }
+                    else if (msg == "color_off")
+                    {
+                        流光溢彩ToolStripMenuItem.Checked = false;
+                        foreach (var process in Process.GetProcessesByName("Prismatik"))
+                        {
+                            try
+                            {
+                                // 杀掉这个进程。
+                                process.Kill();
+                                // 等待进程被杀掉。你也可以在这里加上一个超时时间（毫秒整数）。
+                                process.WaitForExit();
+                            }
+                            catch (Exception)
+                            {
+
+                            }
+                        }
+
+                    }
                 }
             }
         }
@@ -155,21 +192,35 @@ namespace udp_turn_off
         /// <summary>
         /// UDP 发送广播信息
         /// </summary>
+        private void SendNeedMsg(string Msg)
+        {
+            Waiting_for_networking(); //等待网络连接
+            IPEndPoint broadcastIpEndPoint;
+            broadcastIpEndPoint = new IPEndPoint(IPAddress.Broadcast, 1145); //广播到 1145 端口
+            UdpClient client = new UdpClient(new IPEndPoint(IPAddress.Any, 0));
+            byte[] buf = Encoding.UTF8.GetBytes(Msg);
+            client.Send(buf, buf.Length, broadcastIpEndPoint);
+
+        }
         private void SendMsg(string Msg)
         {
-            timer_msg.Elapsed += new ElapsedEventHandler(OnTimer); //创建 timer
+            /*timer_msg.Elapsed += new ElapsedEventHandler(OnTimer); //创建 timer
             timer_msg.AutoReset = false; //只运行一次
             timer_msg.Start();
             void OnTimer(Object source, ElapsedEventArgs e)
+            {*/
+            System.Int32 dwFlag = new int();
+            if (InternetGetConnectedState(ref dwFlag, 0))
             {
                 Waiting_for_networking(); //等待网络连接
                 IPEndPoint broadcastIpEndPoint;
-                broadcastIpEndPoint = new IPEndPoint(IPAddress.Broadcast, 2333); //广播到 2333 端口
+                broadcastIpEndPoint = new IPEndPoint(IPAddress.Broadcast, 1145); //广播到 1145 端口
                 UdpClient client = new UdpClient(new IPEndPoint(IPAddress.Any, 0));
                 byte[] buf = Encoding.UTF8.GetBytes(Msg);
                 client.Send(buf, buf.Length, broadcastIpEndPoint);
-                timer_msg.Stop();
             }
+            /*timer_msg.Stop();*/
+            /* }*/
         }
 
         /// <summary>
@@ -180,14 +231,25 @@ namespace udp_turn_off
             switch (e.Mode)
             {
                 case PowerModes.Resume:
-                    SendMsg("the_computer_is_on");
+                    SendMsg("system_turn_on");
                     break;
                 case PowerModes.Suspend:
                     SendMsg("the_computer_is_about_to_shut_down");
                     break;
             }
         }
-
+        private void OnSessionSwitch(object s, SessionSwitchEventArgs e)
+        {
+            switch (e.Reason)
+            {
+                case SessionSwitchReason.SessionLock:
+                    SendMsg("turn_off");
+                    break;
+                case SessionSwitchReason.SessionUnlock:
+                    SendMsg("turn_on");
+                    break;
+            }
+        }
         //休眠、睡眠
         [DllImport("PowrProf.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
         public static extern bool SetSuspendState(bool hiberate, bool forceCritical, bool disableWakeEvent);
@@ -362,9 +424,8 @@ namespace udp_turn_off
             this.WindowState = FormWindowState.Minimized;
             e.Cancel = true;
             this.BeginInvoke(new Action(() => { this.Hide(); this.Opacity = 1; }));//隐藏窗口并透明化
-
             //判断是否为 windows 关闭事件
-            if (e.CloseReason==CloseReason.WindowsShutDown)
+            if (e.CloseReason == CloseReason.WindowsShutDown)
             {
                 SendMsg("the_computer_is_about_to_shut_down");
             }
@@ -474,6 +535,29 @@ namespace udp_turn_off
         {
             AboutBox1 about_box = new AboutBox1();
             about_box.Show(this);
+        }
+
+        private void 开灯ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendMsg("turn_on");
+        }
+
+        private void 关灯ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SendMsg("turn_off");
+        }
+
+        private void 流光溢彩ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!流光溢彩ToolStripMenuItem.Checked)
+            {
+                SendMsg("computer");
+            }
+            else
+            {
+                SendMsg("normal_light");
+            }
+
         }
     }
 }
