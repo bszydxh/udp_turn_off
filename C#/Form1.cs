@@ -243,7 +243,7 @@ namespace udp_turn_off
             switch (e.Reason)
             {
                 case SessionSwitchReason.SessionLock:
-                    SendMsg("turn_off");
+                    关灯ToolStripMenuItem_Click(null,null);
                     break;
                 case SessionSwitchReason.SessionUnlock:
                     SendMsg("turn_on");
@@ -544,6 +544,26 @@ namespace udp_turn_off
 
         private void 关灯ToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (流光溢彩ToolStripMenuItem.Checked == true)
+            {
+                流光溢彩ToolStripMenuItem.Checked = false;
+                foreach (var process in Process.GetProcessesByName("Prismatik"))
+                {
+                    try
+                    {
+                        // 杀掉这个进程。
+                        process.Kill();
+                        // 等待进程被杀掉。你也可以在这里加上一个超时时间（毫秒整数）。
+                        process.WaitForExit();
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
+            }
+
+
             SendMsg("turn_off");
         }
 
@@ -557,7 +577,6 @@ namespace udp_turn_off
             {
                 SendMsg("normal_light");
             }
-
         }
     }
 }
