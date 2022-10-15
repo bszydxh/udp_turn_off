@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;//命名空间关机，重启，注销，�
 using System.Net.NetworkInformation;
 using Microsoft.Win32;
 using System.Timers;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolTip;
 
 namespace udp_turn_off
 {
@@ -122,6 +123,7 @@ namespace udp_turn_off
         /// <summary>
         /// 监听UDP端口
         /// </summary>
+        private delegate void 流光溢彩CheckOn(bool check);
         private void RecvMsg()
         {
             //Debug.WriteLine("recv start!");
@@ -149,7 +151,10 @@ namespace udp_turn_off
                     }
                     else if (msg == "color")
                     {
-                        流光溢彩ToolStripMenuItem.Checked = true;
+                        this.Invoke((MethodInvoker)delegate {
+                            // Running on the UI thread
+                            流光溢彩ToolStripMenuItem.Checked = true;
+                        });
                         System.Diagnostics.Process.Start("C:/Program Files/Prismatik/Prismatik.exe");
                     }
                     else if (msg == "genshin")
@@ -166,7 +171,10 @@ namespace udp_turn_off
                     }
                     else if (msg == "color_off")
                     {
-                        流光溢彩ToolStripMenuItem.Checked = false;
+                        this.Invoke((MethodInvoker)delegate {
+                            // Running on the UI thread
+                            流光溢彩ToolStripMenuItem.Checked = false;
+                        });
                         foreach (var process in Process.GetProcessesByName("Prismatik"))
                         {
                             try
@@ -243,7 +251,7 @@ namespace udp_turn_off
             switch (e.Reason)
             {
                 case SessionSwitchReason.SessionLock:
-                    关灯ToolStripMenuItem_Click(null,null);
+                    关灯ToolStripMenuItem_Click(null, null);
                     break;
                 case SessionSwitchReason.SessionUnlock:
                     SendMsg("turn_on");
